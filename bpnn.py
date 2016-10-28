@@ -1,5 +1,5 @@
 # Back-Propagation Neural Networks
-# 
+#
 # Written in Python.  See http://www.python.org/
 # Placed in the public domain.
 # Neil Schemenauer <nas@arctrix.com>
@@ -40,7 +40,7 @@ class NN:
         self.ai = [1.0]*self.ni
         self.ah = [1.0]*self.nh
         self.ao = [1.0]*self.no
-        
+
         # create weights
         self.wi = makeMatrix(self.ni, self.nh)
         self.wo = makeMatrix(self.nh, self.no)
@@ -52,9 +52,16 @@ class NN:
             for k in range(self.no):
                 self.wo[j][k] = rand(-2.0, 2.0)
 
-        # last change in weights for momentum   
+        # last change in weights for momentum
         self.ci = makeMatrix(self.ni, self.nh)
         self.co = makeMatrix(self.nh, self.no)
+
+
+        self.filePath = path
+        self.case_num = 0
+        self.feature_num = 0
+        self.label = []
+        self.feature = []
 
     def update(self, inputs):
         if len(inputs) != self.ni-1:
@@ -140,30 +147,82 @@ class NN:
         # M: momentum factor
         for i in range(iterations):
             error = 0.0
-            for p in patterns:
-                inputs = p[0]
-                targets = p[1]
-                self.update(inputs)
-                error = error + self.backPropagate(targets, N, M)
+            for c in range(self.case_num):
+                self.update(self.feature[c])
+                error += self.backPropagate([self.label[c]], self.feature[c])
             if i % 100 == 0:
                 print('error %-.5f' % error)
+        #
+        # write out the model
+        #
+        # f = open("nnModel.txt", 'w')
+        # for i in range(self.ni):
+        #     for j in range(self.nh):
+        #         f.write(str(self.wi[i,j]))
+        #         f.write(' ')
+        #     f.write('\n')
+        # for i in range(self.nh):
+        #     for j in range(self.no):
+        #         f.write(str(self.wo[i,j]))
+        #         f.write(' ')
+        #     f.write('\n')
+        # f.close()
+
+    def parseTrain(self):
+        input_file = open(self.filePath, 'r')
+
+        input_data = []
+
+        #
+        #  raw training data from csv
+        #  [id][bias][features...][label]
+        #
+        for row in csv.reader(input_file, delimiter = ','):
+            input_data.append(row)
+
+        self.case_num = len(input_data)
+        self.feature_num = len(input_data[0]) - 1  # with bias is 58
+        print self.feature_num
+        self.label = np.empty([self.case_num])
+        self.feature = np.ones([self.case_num, self.feature_num])
+
+        #
+        # init training data
+        #____________________________________________________________
+        # label   [0 ~ case_num]  : ground truth of training data
+        # feature [1 ~ case_num]  : features of training data
+        #                         : [0] is bias
+        #
+        for i in range(0, self.case_num):
+            self.label[i] = int(input_data[i][len(input_data[i])-1])
+            self.feature[i][1:self.feature_num] = [ float(value) for value in input_data[i][2:self.feature_num+1] ]
 
 
-def demo():
-    # Teach network XOR function
-    pat = [
-        [[0,0], [0]],
-        [[0,1], [1]],
-        [[1,0], [1]],
-        [[1,1], [0]]
-    ]
 
-    # create a network with two input, two hidden, and one output nodes
-    n = NN(2, 2, 1)
-    # train it with some patterns
-    n.train(pat)
-    # test it
-    n.test(pat)
+        return
+
+# def demo():
+#     # Teach network XOR function
+#     # pat = [
+#     #     [[0,0], [0]],
+#     #     [[0,1], [1]],
+#     #     [[1,0], [1]],
+#     #     [[1,1], [0]]
+#     # ]
+
+#     # create a network with two input, two hidden, and one output nodes
+#     n = NN(2, 2, 1)
+#     # train it with some patterns
+#     n.train(pat)
+#     # test it
+#     n.test(pat)
+
+
+def main():
+    train = spam("./spam_train.csv", 0.5, 0.9)
+    train.parseTrain()
+    train.NN(57, 10, 1)
+    train.train()
 
 
 

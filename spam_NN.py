@@ -4,7 +4,19 @@ import numpy as np
 import math
 
 
-class spam:	
+
+# calculate a random number where:  a <= rand < b
+def rand(a, b):
+    return (b-a)*random.random() + a
+# our sigmoid function, tanh is a little nicer than the standard 1/(1+e^-x)
+def sigmoid(x):
+    return math.tanh(x)
+# derivative of our sigmoid function, in terms of the output (i.e. y)
+def dsigmoid(y):
+    return 1.0 - y**2
+
+
+class spam:
 	def __init__(self, path, alpha, mom):
 		self.filePath = path
 		self.case_num = 0
@@ -14,83 +26,84 @@ class spam:
 		self.no = 0
 		self.ni = 0
 		self.nh = 0
-		
-		self.likelihood = 0
-		self.sum_table = []
+
 		self.alpha = alpha
 		self.mom = mom
-		
-	
+
+		return
+
 	def parseTrain(self):
 		input_file = open(self.filePath, 'r')
-		
+
 		input_data = []
-		
+
 		#
-		#  raw training data from csv   
-		#  [id][bias][features...][label]
-		# 
+		#  raw training data from csv
+		#  [id][features...][label]
+		#
 		for row in csv.reader(input_file, delimiter = ','):
 			input_data.append(row)
-		
-		self.case_num = len(input_data)	
-		self.feature_num = len(input_data[0]) - 1  # with bias is 58
+
+		self.case_num = len(input_data)
+		self.feature_num = len(input_data[0]) - 2  # 57  without bias
+		# self.feature_num = len(input_data[0]) - 1  # 58  with bias
 		print self.feature_num
 		self.label = np.empty([self.case_num])
-		self.feature = np.ones([self.case_num, self.feature_num])	
-		
+		self.feature = np.ones([self.case_num, self.feature_num])
+
 		#
 		# init training data
 		#____________________________________________________________
 		# label   [0 ~ case_num]  : ground truth of training data
-		# feature [1 ~ case_num]  : features of training data
-		#      					  : [0] is bias 
+		# feature [bias, 1 ~ feature_num]  : features of training data
 		#
 		for i in range(0, self.case_num):
 			self.label[i] = int(input_data[i][len(input_data[i])-1])
-			self.feature[i][1:self.feature_num] = [ float(value) for value in input_data[i][2:self.feature_num+1] ]
+			self.feature[i] = [ float(value) for value in input_data[i][1:self.feature_num+1] ]  # without bias
+			# self.feature[i][1:] = [ float(value) for value in input_data[i][1:self.feature_num+1] ]  # with bias
+		return
+	# 	self.tf_idf()
 
-		self.tf_idf()
-		
-	
-	def tf_idf(self):
-		for i in range(1, 49):
-			n = np.count_nonzero(self.feature[:, i])
-			self.feature[:, i] *= np.log(self.case_num/n)
-	
 
+	# def tf_idf(self):
+	# 	for i in range(1, 49):
+	# 		n = np.count_nonzero(self.feature[:, i])
+	# 		self.feature[:, i] *= np.log(self.case_num/n)
 
 	def initNN(self , nh, no):
 		self.ni = self.feature_num
 		self.nh = nh
 		self.no = no
-	
+
 		self.wI = np.matrix( np.random.rand(self.ni, self.nh) ) # wI ->  i x h
-		self.wI -= 0.5
-		self.wI *= 2
+		self.wI -= 1
+		# print self.wI
 		self.wO = np.matrix( np.random.rand(self.nh, self.no) ) # wO ->  h x o
-		self.wO -= 0.5
+		self.wO -= 1
+		# print self.wO
 
 		self.cI = np.zeros( shape = (self.ni, self.nh))
 		self.cO = np.zeros( shape = (self.nh, self.no))
-		
+
 		self.aH = np.zeros(self.nh)
 		self.aO = np.zeros(self.no)
-		
+
+		return
+
 	def update(self, input):
-	
+
 		for index in range(self.nh):
 			#sigmoid = tanh
 			self.aH = np.tanh(input * self.wI)
 		self.aH = np.array(self.aH).reshape(self.nh)
-		
+
 		for index in range(self.no):
     		#sigmoid = tanh
 			self.aO = np.tanh(self.aH * self.wO)
 		self.aO = np.array(self.aO).reshape(self.no)
 
 		return
-		
+
 	def backPropagate(self, y, input):
 		# y     : label[c]
 		# input : feature[c]
@@ -134,12 +147,13 @@ class spam:
 				# print "_____ \n", self.wI
 				self.wI[i,j] += N * change + M * self.cI[i][j]
 				self.cI[i][j] = change
-				
+
 		error = np.square(y-self.aO) / 2
+
 		return error
-		
+
 	def training(self):
-		iter = 10
+		iter = 5
 
 		#
 		# iter  // do update & backpropagate
@@ -152,9 +166,9 @@ class spam:
 				# self.backPropagate([self.label[c]], self.feature[c])
 			print("iter : %d, error :%f"%(i, error))
 
-		# 
-	    # write out the model 
-		#	
+		#
+	    # write out the model
+		#
 		f = open("nnModel.txt", 'w')
 		for i in range(self.ni):
 			for j in range(self.nh):
@@ -167,12 +181,12 @@ class spam:
 				f.write(' ')
 			f.write('\n')
 		f.close()
-		
+
 def main():
-	train = spam("./spam_train.csv", 0.6, 0.1)
+	train = spam("./spam_train.csv", 0.5, 0.9)
 	train.parseTrain()
-	train.initNN(3, 1)
+	train.initNN(57, 1)
 	train.training()
-	
+
 if __name__ == '__main__':
 	main()
