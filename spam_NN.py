@@ -179,7 +179,7 @@ class spam:
 def main():
 	train = spam("./spam_train.csv", 0.1, 0.01)
 	train.parseTrain()
-	train.initNN(6, 1)
+	train.initNN(11, 1)
 	train.training()
 
 if __name__ == '__main__':
