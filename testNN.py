@@ -62,6 +62,7 @@ def test(testFile, weightFile):
 			# print data * wI
 			# print aH*wO
 			# break
+
 			data = np.tanh(data)
 
 			aH = np.tanh((data * wI))

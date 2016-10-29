@@ -16,6 +16,7 @@ class spam:
 		self.nh = 0
 		self.alpha = alpha
 		self.mom = mom
+		self.previousError = 0
 
 	def parseTrain(self):
 		input_file = open(self.filePath, 'r')
@@ -59,8 +60,8 @@ class spam:
 		self.ni = self.feature_num
 		self.nh = nh
 		self.no = no
-		self.wI = np.matrix( np.random.uniform(-1, 1, (self.ni, self.nh) )) # wI ->  i x h
-		self.wO = np.matrix( np.random.uniform(-0.25, 0.25, (self.nh, self.no) )) # wO ->  h x o
+		self.wI = np.matrix( np.random.uniform(-2, 2, (self.ni, self.nh) )) # wI ->  i x h
+		self.wO = np.matrix( np.random.uniform(-0.5, 0.5, (self.nh, self.no) )) # wO ->  h x o
 		self.cI = np.zeros( shape = (self.ni, self.nh))
 		self.cO = np.zeros( shape = (self.nh, self.no))
 		self.aH = np.zeros(self.nh)
@@ -69,6 +70,7 @@ class spam:
 
 	def update(self, input):
 		input = np.tanh(input)
+
 		# for index in range(self.nh):
 		# 	self.aH = np.tanh(input * self.wI + np.random.randint(2))
 		self.aH = np.tanh(input * self.wI )#+ np.random.randint(2))
@@ -94,38 +96,28 @@ class spam:
 		# input : feature[c]
 		# label   [0 ~ case_num]  : ground truth of training data
 		# feature [0 ~ case_num]  : features of training data
-		# o_deltas 1 x o
-		# h_deltas 1 x h
-		o_deltas = np.zeros(self.no)
-		for o_index in range(self.no):
-			o_error	= y - self.aO[o_index]
-			# print y, o_error
-			o_deltas[o_index] = (1.0 -  np.square(self.aO[o_index])) * o_error
 
+		# o_deltas 1 x o
+		o_deltas = np.zeros(self.no)
+		o_error = y - self.aO
+		o_deltas[:] = (1.0 -  np.square(self.aO[:])) * o_error[:]
+
+		# h_deltas 1 x h
 		h_deltas = np.zeros(self.nh)
-		# for h_index in range(self.nh):
-		# 	h_error = o_deltas * self.wO[h_index]  # like transpose wO^t = o x h  but only cal 1 cow
-		# 	# print h_error
-		# 	h_deltas[h_index] = (1.0 -  np.square(self.aH[h_index])) * h_error
 		h_error = (o_deltas * self.wO.T).reshape(self.nh)
 		h_deltas[:] = (1.0 -  np.square(self.aH[:])) * h_error[:]
 
-		# self.wO = np.array(self.wO).reshape(self.nh,self.no)
-		# self.wI = np.array(self.wI).reshape(self.ni,self.nh)
-
-		N = self.alpha
-		M = self.mom
         # update output weights
 		for j in range(self.nh):
 			for k in range(self.no):
 				change = o_deltas[k] * self.aH[j]
-				self.wO[j,k] += N * change + M * self.cO[j][k]
+				self.wO[j,k] += self.alpha * change + self.mom * self.cO[j][k]
 				self.cO[j][k] = change
 		# update input weights
 		for i in range(self.ni):
 			for j in range(self.nh):
 				change = h_deltas[j] * input[i]
-				self.wI[i,j] += N * change + M * self.cI[i][j]
+				self.wI[i,j] += self.alpha * change + self.mom * self.cI[i][j]
 				self.cI[i][j] = change
 
 		return (np.square(y-self.aO) / 2)
@@ -143,27 +135,31 @@ class spam:
 				self.update(self.feature[c])
 				error += self.backPropagate([self.label[c]], self.feature[c])
 				# self.backPropagate([self.label[c]], self.feature[c])
-			print("iter : %d, error :%f"%(i, error))
+			print("iter : %d, error :%f"%(i, error)) , self.previousError
 
 			if iter % 10 == 0:
-				#
-			    # write out the model
-				#
-				# modelname = "nnModel"+str(iter)+".txt"
-				modelname = "nnModel.txt"
-				f = open(modelname, 'w')
-				f.write("nh: " + str(self.nh) + "\n")
-				for i in range(self.ni):
-					for j in range(self.nh):
-						f.write(str(self.wI[i,j]))
-						f.write(' ')
-					f.write('\n')
-				for i in range(self.nh):
-					for j in range(self.no):
-						f.write(str(self.wO[i,j]))
-						f.write(' ')
-					f.write('\n')
-				f.close()
+				if self.previousError > error:
+					self.previousError = error
+					#
+				    # write out the model
+					#
+					# modelname = "nnModel"+str(iter)+".txt"
+					modelname = "nnModel.txt"
+					f = open(modelname, 'w')
+					f.write("nh: " + str(self.nh) + "\n")
+					for i in range(self.ni):
+						for j in range(self.nh):
+							f.write(str(self.wI[i,j]))
+							f.write(' ')
+						f.write('\n')
+					for i in range(self.nh):
+						for j in range(self.no):
+							f.write(str(self.wO[i,j]))
+							f.write(' ')
+						f.write('\n')
+					f.close()
+				elif self.previousError == 0:
+					self.previousError = error
 
 def main():
 	train = spam("./spam_train.csv", 0.001, 0.00001)
