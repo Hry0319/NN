@@ -59,21 +59,16 @@ class spam:
 		self.ni = self.feature_num
 		self.nh = nh
 		self.no = no
-
 		self.wI = np.matrix( np.random.uniform(-1, 1, (self.ni, self.nh) )) # wI ->  i x h
-		# print self.wI
-		self.wO = np.matrix( np.random.uniform(-1, 1, (self.nh, self.no) )) # wO ->  h x o
-		# print self.wO
-
+		self.wO = np.matrix( np.random.uniform(-0.25, 0.25, (self.nh, self.no) )) # wO ->  h x o
 		self.cI = np.zeros( shape = (self.ni, self.nh))
 		self.cO = np.zeros( shape = (self.nh, self.no))
-
 		self.aH = np.zeros(self.nh)
 		self.aO = np.zeros(self.no)
-
 		return
 
 	def update(self, input):
+		input = np.tanh(input)
 		# for index in range(self.nh):
 		# 	self.aH = np.tanh(input * self.wI + np.random.randint(2))
 		self.aH = np.tanh(input * self.wI )#+ np.random.randint(2))
@@ -88,7 +83,6 @@ class spam:
 		self.aO /= 2
 		self.aO += 0.5
 		# print self.aO
-
 
 		self.aH = np.array(self.aH).reshape(self.nh)
 		self.aO = np.array(self.aO).reshape(self.no)
@@ -109,9 +103,13 @@ class spam:
 			o_deltas[o_index] = (1.0 -  np.square(self.aO[o_index])) * o_error
 
 		h_deltas = np.zeros(self.nh)
-		for h_index in range(self.nh):
-			h_error = o_deltas * self.wO[h_index]  # like transpose wO^t = o x h  but only cal 1 cow
-			h_deltas[h_index] = (1.0 -  np.square(self.aH[h_index])) * h_error
+		# for h_index in range(self.nh):
+		# 	h_error = o_deltas * self.wO[h_index]  # like transpose wO^t = o x h  but only cal 1 cow
+		# 	# print h_error
+		# 	h_deltas[h_index] = (1.0 -  np.square(self.aH[h_index])) * h_error
+		h_error = (o_deltas * self.wO.T).reshape(self.nh)
+		h_deltas[:] = (1.0 -  np.square(self.aH[:])) * h_error[:]
+
 		# self.wO = np.array(self.wO).reshape(self.nh,self.no)
 		# self.wI = np.array(self.wI).reshape(self.ni,self.nh)
 
@@ -133,7 +131,7 @@ class spam:
 		return (np.square(y-self.aO) / 2)
 
 	def training(self):
-		iter = 1000
+		iter = 10000
 
 		#
 		# iter  // do update & backpropagate
@@ -168,9 +166,9 @@ class spam:
 				f.close()
 
 def main():
-	train = spam("./spam_train.csv", 0.005, 0.2)
+	train = spam("./spam_train.csv", 0.001, 0.00001)
 	train.parseTrain()
-	train.initNN(50, 1)
+	train.initNN(5, 1)
 	train.training()
 
 if __name__ == '__main__':

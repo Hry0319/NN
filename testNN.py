@@ -62,6 +62,7 @@ def test(testFile, weightFile):
 			# print data * wI
 			# print aH*wO
 			# break
+			data = np.tanh(data)
 
 			aH = np.tanh((data * wI))
 			# aH /= 2
@@ -70,13 +71,13 @@ def test(testFile, weightFile):
 			# print aH
 			# break
 			aO = np.tanh(np.sum(aH*wO))
-			# aO /= 2
-			# aO += 0.5
+			aO /= 2
+			aO += 0.5
 			# print aO
 			# break
 
 			f.write(str(aO)+'\n')
-			if aO > 0:
+			if aO > 0.5:
 				row[1] = "1"
 			else:
 				row[1] = "0"
