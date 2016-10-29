@@ -17,6 +17,7 @@ class spam:
 		self.alpha = alpha
 		self.mom = mom
 		self.previousError = 0
+		self.breakcount = 0
 
 	def parseTrain(self):
 		input_file = open(self.filePath, 'r')
@@ -46,10 +47,9 @@ class spam:
 			self.feature[i] = [ float(value) for value in input_data[i][1:self.feature_num+1] ]  # without bias
 			# self.feature[i][1:] = [ float(value) for value in input_data[i][1:self.feature_num+1] ]  # with bias
 		# self.tf_idf()
-		# for i in range(49, self.feature_num):
-		# 	self.feature[:, i] = np.log(self.feature[:, i]+1)
-		# 	print i, self.feature[:, i]
-		# self.feature[:, 55] = np.log10(self.feature[:, 55])
+		for i in range(49, self.feature_num):
+			self.feature[:, i] = np.log10(self.feature[:, i]+1)
+			print i, self.feature[:, i]
 
 	# def tf_idf(self):
 	# 	for i in range(0, 49):
@@ -61,7 +61,7 @@ class spam:
 		self.nh = nh
 		self.no = no
 		self.wI = np.matrix( np.random.uniform(-2, 2, (self.ni, self.nh) )) # wI ->  i x h
-		self.wO = np.matrix( np.random.uniform(-0.5, 0.5, (self.nh, self.no) )) # wO ->  h x o
+		self.wO = np.matrix( np.random.uniform(-1, 1, (self.nh, self.no) )) # wO ->  h x o
 		self.cI = np.zeros( shape = (self.ni, self.nh))
 		self.cO = np.zeros( shape = (self.nh, self.no))
 		self.aH = np.zeros(self.nh)
@@ -69,7 +69,7 @@ class spam:
 		return
 
 	def update(self, input):
-		input = np.tanh(input)
+		# input = np.tanh(input)
 
 		# for index in range(self.nh):
 		# 	self.aH = np.tanh(input * self.wI + np.random.randint(2))
@@ -140,9 +140,8 @@ class spam:
 			if iter % 10 == 0:
 				if self.previousError > error:
 					self.previousError = error
-					#
+					self.breakcount = 0
 				    # write out the model
-					#
 					# modelname = "nnModel"+str(iter)+".txt"
 					modelname = "nnModel.txt"
 					f = open(modelname, 'w')
@@ -161,10 +160,15 @@ class spam:
 				elif self.previousError == 0:
 					self.previousError = error
 
+				elif self.previousError < error:
+					self.breakcount+=1
+					if self.breakcount > 300:
+						return
+
 def main():
-	train = spam("./spam_train.csv", 0.001, 0.00001)
+	train = spam("./spam_train.csv", 0.1, 0.0)
 	train.parseTrain()
-	train.initNN(5, 1)
+	train.initNN(11, 1)
 	train.training()
 
 if __name__ == '__main__':

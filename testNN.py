@@ -55,27 +55,16 @@ def test(testFile, weightFile):
 			row[0] = str(case[0])
 			# data[1:] = np.asarray([float(val) for val in case[1:]])
 			data[:] = np.asarray([float(val) for val in case[1:]])
+			data[49:feature_num+1] = np.log10(data[49:feature_num+1]+1)
 
-			# break
-			# aH = 1/ (1+ np.exp(-1*(data*wI)))
-			# aO = 1/ (1+ np.exp(-1*np.sum(wO*aH)))
-			# print data * wI
-			# print aH*wO
-			# break
-
-			data = np.tanh(data)
+			# data = np.tanh(data)
 
 			aH = np.tanh((data * wI))
 			# aH /= 2
 			# aH += 0.5
-
-			# print aH
-			# break
 			aO = np.tanh(np.sum(aH*wO))
 			aO /= 2
 			aO += 0.5
-			# print aO
-			# break
 
 			f.write(str(aO)+'\n')
 			if aO > 0.5:
