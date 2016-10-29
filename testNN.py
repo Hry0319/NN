@@ -15,30 +15,36 @@ from itertools import islice
 
 
 def test(testFile, weightFile):
-	hidden = 57
+	hidden = 0
 	feature_num = 57
 	# with open('ansNN.csv', 'w', newline='') as out:
 	with open('ansNN.csv', 'wb') as out:
 		reader = csv.reader(open(testFile,'r'))
 		writer = csv.writer(out, delimiter = ',')
-
-		wI = np.matrix(np.zeros(shape = (feature_num, hidden)))
-		wO = np.matrix(np.zeros(shape = (hidden, 1)))
-
-
 		f = open("nnZ.txt", "w")
 		m = open(weightFile, 'r')
+
+		line = m.readline()
+		hidden = int((line.strip().split(' '))[1])
+
+
+		wI = np.matrix(np.zeros(shape = (feature_num, hidden)))
+		wO = []
+
 
 		i = 0
 		for line in m.readlines():
 			line = line.strip().split(' ')
+			if line[0] == 'nh:':
+				continue
 			if i < feature_num:
 				wI[i] = [float(val) for val in line]
 				i += 1
 			else:
-				wO[0] = [float(val) for val in line]
+				wO.append( [float(val) for val in line] )
 
-		# print wI
+		# wO = np.matrix(wO)
+		# print wO
 
 		writer.writerow(["id", "label"])
 		row = [0, 0]
@@ -54,12 +60,23 @@ def test(testFile, weightFile):
 			# aH = 1/ (1+ np.exp(-1*(data*wI)))
 			# aO = 1/ (1+ np.exp(-1*np.sum(wO*aH)))
 			# print data * wI
+			# print aH*wO
+			# break
 
 			aH = np.tanh((data * wI))
+			# aH /= 2
+			# aH += 0.5
+
+			# print aH
+			# break
 			aO = np.tanh(np.sum(aH*wO))
+			# aO /= 2
+			# aO += 0.5
+			# print aO
+			# break
 
 			f.write(str(aO)+'\n')
-			if aO > 0.5:
+			if aO > 0:
 				row[1] = "1"
 			else:
 				row[1] = "0"
