@@ -137,7 +137,7 @@ class spam:
 				# self.backPropagate([self.label[c]], self.feature[c])
 			print("iter : %d, error :%f"%(i, error)) , self.previousError
 
-			if iter % 10 == 0:
+			if (iter % 10) == 0:
 				if self.previousError > error:
 					self.previousError = error
 					self.breakcount = 0
