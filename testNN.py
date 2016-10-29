@@ -55,7 +55,7 @@ def test(testFile, weightFile):
 			row[0] = str(case[0])
 			# data[1:] = np.asarray([float(val) for val in case[1:]])
 			data[:] = np.asarray([float(val) for val in case[1:]])
-			data[49:feature_num+1] = np.log10(data[49:feature_num+1]+1)
+			data[49:feature_num+1] = np.log10(data[49:feature_num+1]+1)/2
 
 			# data = np.tanh(data)
 

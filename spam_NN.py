@@ -18,6 +18,7 @@ class spam:
 		self.mom = mom
 		self.previousError = 0
 		self.breakcount = 0
+		self.biasH = self.biasO = 0
 
 	def parseTrain(self):
 		input_file = open(self.filePath, 'r')
@@ -48,8 +49,8 @@ class spam:
 			# self.feature[i][1:] = [ float(value) for value in input_data[i][1:self.feature_num+1] ]  # with bias
 		# self.tf_idf()
 		for i in range(49, self.feature_num):
-			self.feature[:, i] = np.log10(self.feature[:, i]+1)
-			print i, self.feature[:, i]
+			self.feature[:, i] = np.log10(self.feature[:, i]+1)/2
+			# print i, self.feature[:, i]
 
 	# def tf_idf(self):
 	# 	for i in range(0, 49):
@@ -66,6 +67,12 @@ class spam:
 		self.cO = np.zeros( shape = (self.nh, self.no))
 		self.aH = np.zeros(self.nh)
 		self.aO = np.zeros(self.no)
+		self.biasH = np.zeros(self.nh)
+		self.biasO = np.zeros(self.no)
+		for i in range(self.nh):
+			self.biasH[i] = np.random.randint(2)
+		for i in range(self.no):
+			self.biasO[i] = np.random.randint(2)
 		return
 
 	def update(self, input):
@@ -73,14 +80,14 @@ class spam:
 
 		# for index in range(self.nh):
 		# 	self.aH = np.tanh(input * self.wI + np.random.randint(2))
-		self.aH = np.tanh(input * self.wI )#+ np.random.randint(2))
+		self.aH = np.tanh(input * self.wI + self.biasH)
 		# self.aH /= 2
 		# self.aH += 0.5
 		# print self.aH
 
 		# for index in range(self.no):
 		# 	self.aO = np.tanh(self.aH * self.wO + np.random.randint(2))
-		self.aO = np.tanh(self.aH * self.wO )#+ np.random.randint(2))
+		self.aO = np.tanh(self.aH * self.wO + self.biasO)
 		# remap to 0~1
 		self.aO /= 2
 		self.aO += 0.5
@@ -137,6 +144,10 @@ class spam:
 				# self.backPropagate([self.label[c]], self.feature[c])
 			print("iter : %d, error :%f"%(i, error)) , self.previousError
 
+			if error < 70:
+				self.alpha = 0.005
+				self.mom   = 0.001
+
 			if (iter % 10) == 0:
 				if self.previousError > error:
 					self.previousError = error
@@ -166,9 +177,9 @@ class spam:
 						return
 
 def main():
-	train = spam("./spam_train.csv", 0.1, 0.001)
+	train = spam("./spam_train.csv", 0.1, 0.01)
 	train.parseTrain()
-	train.initNN(14, 1)
+	train.initNN(6, 1)
 	train.training()
 
 if __name__ == '__main__':
